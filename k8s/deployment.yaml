@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: byteboard-ui
+  labels:
+    app: byteboard-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: byteboard-ui
+  template:
+    metadata:
+      labels:
+        app: byteboard-ui
+    spec:
+      containers:
+        - name: byteboard-ui
+          image: ${DOCKER_IMAGE}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: byteboard-ui-config
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"

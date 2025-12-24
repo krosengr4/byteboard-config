@@ -1,46 +1,42 @@
- pipeline {
-      agent any
+pipeline {
+    agent any
 
-      environment {
-          PI_HOST = 'rosenpi.local'
-          PI_USER = 'krosengren'
-          CHART_PATH = 'chart'
-          ENV_VALUES = 'environments/rosenpi/values.yaml'
-          RELEASE_NAME = 'byteboard-ui'
-          NAMESPACE = 'default'
-      }
+    environment {
+        PI_HOST = 'rosenpi.local'
+        PI_USER = 'krosengren'
+    }
 
-      stages {
-          stage('Deploy to K3s') {
-              steps {
-                  echo 'Deploying byteboard-ui to K3s with Helm...'
-                  withCredentials([sshUserPrivateKey(
-                      credentialsId: 'rosenpi-ssh',
-                      keyFileVariable: 'SSH_KEY'
-                  )]) {
-                      sh '''
-                          # Copy chart and environment values to Pi
-                          scp -i $SSH_KEY -o StrictHostKeyChecking=no -r ${CHART_PATH} ${PI_USER}@${PI_HOST}:~/byteboard-ui-chart
-                          scp -i $SSH_KEY -o StrictHostKeyChecking=no ${ENV_VALUES} ${PI_USER}@${PI_HOST}:~/byteboard-ui-chart/env-values.yaml
+    stages {
+        stage('Deploy to K3s') {
+            steps {
+                echo 'Deploying byteboard-ui to K3s...'
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'rosenpi-ssh',
+                    keyFileVariable: 'SSH_KEY'
+                )]) {
+                    sh '''
+                        scp -i $SSH_KEY -o StrictHostKeyChecking=no -r k8s ${PI_USER}@${PI_HOST}:~/byteboard-ui-k8s
+                        scp -i $SSH_KEY -o StrictHostKeyChecking=no .env ${PI_USER}@${PI_HOST}:~/byteboard-ui-k8s/
 
-                          ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${PI_USER}@${PI_HOST} << 'ENDSSH'
-                              cd ~/byteboard-ui-chart
-                              helm upgrade --install byteboard-ui . \
-                                  -f values.yaml \
-                                  -f env-values.yaml \
-                                  --namespace default \
-                                  --wait \
-                                  --timeout 120s
-                              kubectl get pods -l app=byteboard-ui
-                          ENDSSH
-                      '''
-                  }
-              }
-          }
-      }
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${PI_USER}@${PI_HOST} '
+                            cd ~/byteboard-ui-k8s
+                            export $(cat .env | xargs)
 
-      post {
-          success { echo 'Helm deployment successful!' }
-          failure { echo 'Helm deployment failed!' }
-      }
-  }
+                            for file in k8s/*.yaml; do
+                                envsubst < "$file" | kubectl apply -f -
+                            done
+
+                            kubectl rollout status deployment/byteboard-ui --timeout=60s
+                            kubectl get pods -l app=byteboard-ui
+                        '
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo 'Deployment successful!' }
+        failure { echo 'Deployment failed!' }
+    }
+}
