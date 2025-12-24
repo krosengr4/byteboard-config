@@ -15,14 +15,26 @@ pipeline {
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh '''
-                        scp -i $SSH_KEY -o StrictHostKeyChecking=no -r k8s ${PI_USER}@${PI_HOST}:~/byteboard-ui-k8s
+                        # Create target directory
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${PI_USER}@${PI_HOST} 'mkdir -p ~/byteboard-ui-k8s'
+
+                        # Copy files
+                        scp -i $SSH_KEY -o StrictHostKeyChecking=no -r k8s ${PI_USER}@${PI_HOST}:~/byteboard-ui-k8s/
                         scp -i $SSH_KEY -o StrictHostKeyChecking=no .env ${PI_USER}@${PI_HOST}:~/byteboard-ui-k8s/
 
+                        # Deploy
                         ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${PI_USER}@${PI_HOST} '
                             cd ~/byteboard-ui-k8s
+
+                            if [ ! -d "k8s" ]; then
+                                echo "ERROR: k8s directory not found!"
+                                exit 1
+                            fi
+
                             export $(cat .env | xargs)
 
                             for file in k8s/*.yaml; do
+                                echo "Applying: $file"
                                 envsubst < "$file" | kubectl apply -f -
                             done
 
