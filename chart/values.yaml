@@ -1,0 +1,19 @@
+nameOverride: byteboard-ui
+
+image:
+  repository: krosengr4/byteboard-ui
+  tag: latest
+
+service:
+  port: 3000
+  nodePort: 30003
+
+replicas: 1
+
+resources:
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+config:
+  apiUrl: "http://localhost:8080"
