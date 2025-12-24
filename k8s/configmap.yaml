@@ -5,4 +5,5 @@ metadata:
   labels:
     app: byteboard-ui
 data:
+  API_URL: "${API_URL}"
   NEXT_PUBLIC_API_URL: "${API_URL}"
