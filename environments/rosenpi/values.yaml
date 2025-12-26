@@ -1,5 +1,0 @@
-image:
-  tag: latest
-
-config:
-  apiUrl: "http://byteboard-service:8080"
