@@ -38,6 +38,7 @@ pipeline {
                                     exit 1
                                 fi
 
+                                KUBECONFIG=~/.kube/config
                                 export \$(cat .env | xargs)
                                 export DOCKER_IMAGE="${imageTag}"
 
