@@ -58,7 +58,10 @@ ENDSSH
     }
 
     post {
-        success { echo 'Deployment successful!' }
+        success {
+            build job: 'deploy', wait: false
+            echo 'Deployment successful!' 
+            }
         failure { echo 'Deployment failed!' }
     }
 }
