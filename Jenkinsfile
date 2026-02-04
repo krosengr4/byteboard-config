@@ -47,6 +47,8 @@ pipeline {
                                     envsubst < "\$file" | kubectl apply -f -
                                 done
 
+                                # Force pod restart to pull latest image
+                                kubectl rollout restart deployment/byteboard-ui
                                 kubectl rollout status deployment/byteboard-ui --timeout=60s
                                 kubectl get pods -l app=byteboard-ui
 ENDSSH
